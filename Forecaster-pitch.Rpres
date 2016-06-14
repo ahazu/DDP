@@ -1,0 +1,79 @@
+Developing Data Products - Final project pitch
+========================================================
+author: Per Rynning
+date: 14 June 2016
+autosize: true
+
+
+Introduction
+========================================================
+
+The application presented is a submission for the Coursera course *Developing Data Products*. 
+
+The application can be found at:
+<https://ahazu.shinyapps.io/Forecaster/>.
+
+
+User interface
+========================================================
+
+The user interface is relatively simple. You need to specify:
+
+- Ticker / Stock symbol
+    + You can also specify currencies for forecasting (ex: NOK, SEK or BTC)
+- From date 
+    + The start date from which you want to pull data
+- To date
+    + The end date for how long to pull data
+- Period to forecast (in months)
+
+Example of output
+========================================================
+
+```{r, echo=FALSE}
+    # Loads required libraries
+    library(forecast)
+    library(quantmod)
+
+    # Get data for ticker from Google Finance for specified date range
+        TICK <- getSymbols("IBM", 
+                           src="yahoo", 
+                           from="01/01/2001", 
+                           to="06/06/2106",
+                           auto.assign = FALSE)
+        
+        # Converts retrieved data to monthly data
+        mTICK <- to.monthly(TICK)
+        
+        # Extracts the closing price and converts it to yearly time series (12 observations pr year)
+        ts <- ts(Cl(mTICK), 
+                 frequency = 12)
+        
+        # Finds the number of years
+        rows <- ceiling(length(ts)/12)
+
+        # Uses 90% of the data to create training data set        
+        ts.train <- window(ts, start = 1, end = floor(rows*.9)-0.01)
+        
+        # Uses the remaining 10% to create test set
+        ts.test <- window(ts, start = floor(rows*.9))
+        
+        # Compute the exponential smoothing average
+        ets <- ets(ts.train, model="MMM")
+        
+        # Constructs a forecasting model using the exponential smoothing function
+        fcast <- forecast(ets, h=36)
+        
+        # Plots forecast and adds actual data in red
+        plot(fcast)
+        lines(ts.test, col="red")
+```
+
+This graph details the **IBM** stock with start date **01/01/2001**, end date **06/06/2016** and has a forecasting period of **36** months. 
+
+Disclaimer
+========================================================
+
+Although tempting, please refrain from basing economic desicions (solely) on the output from the stock forecaster. 
+
+The author is not responsible for neither financial ruin, nor unhappiness caused by excessive amounts of money.
